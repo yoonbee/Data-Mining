@@ -199,7 +199,7 @@ def output_to_file(filename, frequent_itemsets_table, transactions):
 # The main function
 def main():
     input_filename = 'assignment1_input.txt'
-    output_filename = 'result.txt'
+    output_filename = 'result1.txt'
     cellular_functions, genes_set = get_input_data(input_filename)
     min_support = ceil(MIN_SUPPORT_PERCENT * len(cellular_functions))
     frequent_itemsets_table = generate_all_frequent_itemsets(cellular_functions, genes_set, min_support)
