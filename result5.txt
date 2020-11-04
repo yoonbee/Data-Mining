@@ -1,0 +1,7 @@
+result3.txt's jaccard: 0.3177208467160669
+result_1.0_2.txt's jaccard: 0.3330005200208008
+result_1.0_4.txt's jaccard: 0.33569016462642465
+result_1.0_6.txt's jaccard: 0.3467099633587116
+result_2.0_2.txt's jaccard: 0.18314646594021558
+result_2.0_4.txt's jaccard: 0.18368719947761047
+result_2.0_6.txt's jaccard: 0.18771654506175356
