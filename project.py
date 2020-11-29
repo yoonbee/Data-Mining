@@ -1,6 +1,5 @@
 import copy
 import math
-import time
 
 
 def get_input_data():
@@ -31,6 +30,44 @@ def get_ground_truth_data():
     return ground_truth
 
 
+def data_preprocessing():
+    graph = get_input_data()
+    ground_truth = get_ground_truth_data()
+
+    ground = set()
+    for gt in ground_truth:
+        ground.update(gt)
+    input = set(graph.keys())
+    vertices = input & ground
+
+    # input에 있는데 ground_truth에 없는 것 삭제
+    for v_ground in copy.deepcopy(ground):
+        if v_ground not in vertices:
+            for gt in ground_truth:
+                if v_ground in gt:
+                    gt.remove(v_ground)
+
+    for gt in copy.deepcopy(ground_truth):
+        if len(gt) == 0:
+            ground_truth.remove(gt)
+
+    # ground_truth에 있는데 input에 없는 것 삭제
+    key = list(graph.keys())
+    for v_input in key:
+        if v_input not in vertices:
+            del graph[v_input]
+            for val in graph.values():
+                if v_input in val:
+                    val.remove(v_input)
+
+    key = list(graph.keys())
+    for v_input in key:
+        if len(graph[v_input]) == 0:
+            del graph[v_input]
+
+    return graph, ground_truth
+
+
 def select_seed_node(graph):
     seed = ""
     highest_degree = 0
@@ -44,8 +81,10 @@ def select_seed_node(graph):
 
 
 def get_weight(v1, v2, graph, option_weight):
-    if option_weight == 'cn':
+    if option_weight == 'jaccard':
         return len(set(graph[v1]) & set(graph[v2])) / (len(set(graph[v1]) | set(graph[v2])))
+    elif option_weight == 'sorensen':
+        return 2*len(set(graph[v1]) & set(graph[v2]))/(len(graph[v1])+len(graph[v2]))
 
 
 def get_vertex_entropy(inner, outer, weight_inner, weight_outer, option_method):
@@ -190,9 +229,13 @@ def get_validation_score(clusters, ground_truth, option_validation):
                 continue
 
             for gt in ground_truth:
-                recall = len(set(cluster) | set(gt)) / len(gt)
-                precision = len(set(cluster) | set(gt)) / len(cluster)
-                f_measure = 2 * recall * precision / (recall + precision)
+                recall = len(set(cluster) & set(gt)) / len(gt)
+                precision = len(set(cluster) & set(gt)) / len(cluster)
+
+                if recall == 0 and precision == 0:
+                    f_measure = 0
+                else:
+                    f_measure = 2 * recall * precision / (recall + precision)
 
                 if highest_f_measure <= f_measure:
                     highest_f_measure = f_measure
@@ -200,32 +243,54 @@ def get_validation_score(clusters, ground_truth, option_validation):
             sum += highest_f_measure
 
         return sum/len(clusters)
-    # TODO: aupr 코드 짜기
-    # elif option_validation == 'aupr':
+
+    elif option_validation == 'rand':
+        vertices = set()
+        for cluster in clusters:
+            vertices.update(cluster)
+
+        sum = 0.0
+        for cluster in clusters:
+
+            if len(cluster) == 1:
+                continue
+
+            highest_rand_index = 0.0
+            for gt in ground_truth:
+                rand_index = (len(set(cluster)&set(gt))+len(vertices - (set(cluster)|set(gt))))/len(vertices)
+
+                if highest_rand_index <= rand_index:
+                    highest_rand_index = rand_index
+
+            sum += highest_rand_index
+
+        return sum/len(clusters)
 
 
 def WRGE(option_weight, option_validation):
-    graph = get_input_data()
-    ground_truth = get_ground_truth_data()
+    graph, ground_truth = data_preprocessing()
     clusters = apply_graph_entropy_algorithm(graph, 'wrge', option_weight)
     score = get_validation_score(clusters, ground_truth, option_validation)
     print("method: WRGE / weight:", option_weight, "/ validation:", option_validation, "/ score:", score)
 
 
 def MWGE(option_weight, option_validation):
-    graph = get_input_data()
-    ground_truth = get_ground_truth_data()
+    graph, ground_truth = data_preprocessing()
     clusters = apply_graph_entropy_algorithm(graph, 'mwge', option_weight)
     score = get_validation_score(clusters, ground_truth, option_validation)
     print("method: MWGE / weight:", option_weight, "/ validation:", option_validation, "/ score:", score)
 
 
 def main():
-    # WRGE('cn', 'f-measure')
-    # WRGE('cn', 'aupr')
+    WRGE('jaccard', 'f-measure')
+    WRGE('jaccard', 'rand')
+    WRGE('sorensen', 'f-measure')
+    WRGE('sorensen', 'rand')
 
-    # MWGE('cn', 'f-measure')
-    # MWGE('cn', 'aupr')
+    MWGE('jaccard', 'f-measure')
+    MWGE('jaccard', 'rand')
+    MWGE('sorensen' , 'f-measure')
+    MWGE('sorensen', 'rand')
 
 
 if __name__ == "__main__":
