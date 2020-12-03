@@ -1,5 +1,4 @@
 import copy
-import time
 
 
 # This function reads data set and return graph
@@ -22,6 +21,8 @@ def get_input_data(filename):
     return graph
 
 
+# This function find all the subgraphs of graph
+# return: list of subgraph
 def find_all_the_subgraphs(graph):
     subgraphs = []
 
@@ -59,7 +60,8 @@ def find_all_the_subgraphs(graph):
     return result_subgraphs
 
 
-# This
+# This function measure the density of each subgraph.
+# return: density of subgraph
 def get_density(subgraph, graph):
     num_of_edeg = 0
 
@@ -77,6 +79,8 @@ def get_jaccard_index(e1, e2):
     return len(e1 & e2) / len(e1 | e2)
 
 
+# This function get Jaccard index of two clusters
+# return: edge which have the smallest Jaccard index
 def find_smallest_jaccard_edge(graph):
     smallest_jaccard = len(graph.keys())
     edge = []
@@ -92,6 +96,9 @@ def find_smallest_jaccard_edge(graph):
     return edge
 
 
+# This function do top-down algorithm
+# param graph: dictionary of graph
+# return: clusters
 def apply_hierarchical_algorithm(graph):
     clusters = []
     subgraphs = find_all_the_subgraphs(graph)
@@ -99,9 +106,11 @@ def apply_hierarchical_algorithm(graph):
     while len(subgraphs) != 0:
         subgraph = subgraphs.pop()
         print(len(subgraphs), subgraph)
-
+        
+        # step 2 - check density of subgraph
         density = get_density(subgraph, graph)
-
+        
+        # if density is greater than threshold then return the subgraph as a cluster
         if density >= 0.5:
             for vertex in subgraph:
                 del graph[vertex]
@@ -119,6 +128,7 @@ def apply_hierarchical_algorithm(graph):
                 sub_graph[vertex] = graph[vertex]
 
             while True:
+                # step 1 - iteratively remove an edge whose two ending vertices
                 cnt_sub = len(find_all_the_subgraphs(sub_graph))
                 target_edge = find_smallest_jaccard_edge(sub_graph)
 
@@ -164,7 +174,6 @@ def output_to_file(filename, clusters):
 
 
 def main():
-    st = time.time()
     input_filename = 'assignment7_input.txt'
     output_filename = 'result7.txt'
 
