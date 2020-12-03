@@ -2,6 +2,9 @@ import copy
 import time
 
 
+# This function reads data set and return graph
+# param filename: The name of the input file
+# return: dictionary(key: vertex & value: list of neighbor vertex
 def get_input_data(filename):
     with open(filename) as file:
         graph = dict()
@@ -27,10 +30,36 @@ def find_all_the_subgraphs(graph):
         s.update(graph[key])
         subgraphs.append(s)
 
+    result_subgraphs = []
+    remain_graph = subgraphs
 
-    return subgraphs
+    while True:
+        if len(remain_graph) == 0:
+            break
+
+        s1 = remain_graph.pop()
+
+        tmp_set = set(s1)
+        while True:
+            if len(s1) == 0:
+                break
+
+            s2 = s1.pop()
+
+            for set_list in remain_graph:
+                if s2 in set_list:
+                    for ver in set_list:
+                        if ver not in tmp_set:
+                            s1.add(ver)
+                    tmp_set.update(set_list)
+                    remain_graph.remove(set_list)
+
+        result_subgraphs.append(tmp_set.copy())
+
+    return result_subgraphs
 
 
+# This
 def get_density(subgraph, graph):
     num_of_edeg = 0
 
@@ -67,43 +96,83 @@ def apply_hierarchical_algorithm(graph):
     clusters = []
     subgraphs = find_all_the_subgraphs(graph)
 
-    # for subgraph in copy.deepcopy(subgraphs):
-    #     density = get_density(subgraph, graph)
-    #
-    #     if density >= 0.5:
-    #         for vertex in subgraph:
-    #             del graph[vertex]
-    #
-    #         for key in graph.keys():
-    #             if vertex in graph[key]:
-    #                 graph[key].remove(vertex)
-    #
-    #         clusters.append(subgraph)
-    #         subgraphs.remove(subgraph)
-    #
-    # for k, v in graph.items():
-    #     print(k, len(v), v)
-    # for subgraph in subgraphs:
-    #     print(subgraph)
-    #     sub_dict = dict()
-    #
-    #     for vertex in subgraph:
-    #         sub_dict[vertex] = graph[vertex]
-    #
-    # #
-    # #     # while True:
-    # #         # cnt_sub = len(find_all_the_subgraphs(sub_dict))
-    #     target_edge = find_smallest_jaccard_edge(sub_dict)
-    #     print(target_edge)
+    while len(subgraphs) != 0:
+        subgraph = subgraphs.pop()
+        print(len(subgraphs), subgraph)
+
+        density = get_density(subgraph, graph)
+
+        if density >= 0.5:
+            for vertex in subgraph:
+                del graph[vertex]
+
+            for key in graph.keys():
+                if vertex in graph[key]:
+                    graph[key].remove(vertex)
+
+            clusters.append(subgraph)
+        else:
+            subgraph_copy = copy.deepcopy(subgraph)
+            sub_graph = dict()
+
+            for vertex in subgraph:
+                sub_graph[vertex] = graph[vertex]
+
+            while True:
+                cnt_sub = len(find_all_the_subgraphs(sub_graph))
+                target_edge = find_smallest_jaccard_edge(sub_graph)
+
+                sub_graph[target_edge[0]].remove(target_edge[1])
+                sub_graph[target_edge[1]].remove(target_edge[0])
+
+                if len(sub_graph[target_edge[0]]) == 0:
+                    del sub_graph[target_edge[0]]
+                    subgraph.remove(target_edge[0])
+
+                if len(sub_graph[target_edge[1]]) == 0:
+                    del sub_graph[target_edge[1]]
+                    subgraph.remove(target_edge[1])
+
+                if len(sub_graph.keys()) == 0:
+                    clusters.append(subgraph_copy)
+                    break
+                if cnt_sub != len(find_all_the_subgraphs(sub_graph)):
+                    sub = find_all_the_subgraphs(sub_graph)
+                    subgraphs.extend(sub)
+                    break
+
+    return clusters
+
+
+# This function writes the output clusters to a file
+# param filename: The output filename
+# param clusters: The output clusters
+def output_to_file(filename, clusters):
+    file = open(filename, 'w')
+
+    for cluster in clusters:
+        if len(cluster) < 2:
+            continue
+
+        s = str(len(cluster)) + ": {"
+        for c in cluster:
+            s += c + " "
+        s = s[:-1] + "} \n"
+        file.write(s)
+
+    file.close()
 
 
 def main():
     st = time.time()
     input_filename = 'assignment7_input.txt'
-    graph = get_input_data(input_filename)
+    output_filename = 'result7.txt'
 
+    graph = get_input_data(input_filename)
     clusters = apply_hierarchical_algorithm(graph)
-    # print(time.time()-st)
+    clusters.sort(key=lambda x: len(x), reverse=True)
+
+    output_to_file(output_filename, clusters)
 
 
 if __name__ == "__main__":
